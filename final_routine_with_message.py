@@ -1,4 +1,3 @@
-
 import streamlit as st
 import os
 import random
@@ -7,6 +6,20 @@ st.set_page_config(page_title="TWO Y FIT 맞춤 루틴 생성기", layout="cente
 st.image("two_y_fit_logo_transparent.png", width=200)
 st.title("TWO Y FIT 맞춤 루틴 생성기")
 
+# -------------------------
+# 안내문 공통 함수
+# -------------------------
+def show_notes(show_main_tip: bool = False):
+    st.markdown("📌 운동 루틴 생성 후 순서는 그대로 해도 되고 바꿔도 상관 없습니다.")
+    if show_main_tip:
+        st.markdown(
+            "💥 <span style='color:red;'>메인운동은 무게가 무거워질수록 반복 횟수를 줄입니다.</span>",
+            unsafe_allow_html=True
+        )
+
+# -------------------------
+# 운동 DB
+# -------------------------
 routine_db = {
     "어깨": [
         ("오버헤드프레스", "오버헤드프레스.PNG"),
@@ -24,7 +37,7 @@ routine_db = {
         ("컨벤셔널 데드리프트", "컨벤셔널 데드리프트.PNG"),
         ("랫풀다운", "랫풀다운.PNG"),
         ("비하인드 랫풀다운", "비하인드 랫풀다운.PNG"),
-        ("케이블 풀다운", "케이블 풀다운.PNG"),
+        ("케이블 풀다운", "케이블 풀डाउन.PNG") if os.path.exists("케이블 풀다운.PNG") else ("케이블 풀다운", "케이블 풀다운.PNG"),
         ("인클라인 덤벨로우", "인클라인 덤벨로우.PNG"),
         ("티바로우", "티바로우.PNG"),
         ("원암 덤벨로우", "원암 덤벨로우.PNG"),
@@ -95,12 +108,20 @@ main_exercise = {
     "하체": "스쿼트"
 }
 
-part = st.selectbox("운동 부위 선택", ["어깨", "등", "가슴", "하체", "팔"])
+# -------------------------
+# UI
+# -------------------------
+part = st.selectbox(
+    "운동 부위 선택",
+    ["어깨", "등", "가슴", "하체", "팔", "상체", "밀기", "당기기"],
+    key="part_select"
+)
 
 if part == "팔":
-    arm_type = st.radio("세부 부위 선택", ["이두", "삼두"])
+    arm_type = st.radio("세부 부위 선택", ["이두", "삼두"], key="arm_type_radio")
     st.markdown("**3세트 / 15회 기준으로 추천됩니다.**")
-    st.markdown("📌 운동 루틴 생성 후 순서는 그대로 해도 되고 바꿔도 상관 없습니다.")
+    show_notes(show_main_tip=False)
+
     selected = random.sample(arms_db[arm_type], 4)
     for i, (name, file) in enumerate(selected, 1):
         col1, col2 = st.columns([1, 5])
@@ -111,16 +132,74 @@ if part == "팔":
                 st.warning("이미지 없음")
         with col2:
             st.markdown(f"**{i}. {name}**  \n3세트 / 15회")
+
+elif part == "상체":
+    # 등 1 + 어깨 1 + 가슴 1 + 이두 1 + 삼두 1 (완전 변동)
+    back_ex = random.choice(routine_db["등"])
+    shoulder_ex = random.choice(routine_db["어깨"])
+    chest_ex = random.choice(routine_db["가슴"])
+    biceps_ex = random.choice(arms_db["이두"])
+    triceps_ex = random.choice(arms_db["삼두"])
+    final = [back_ex, shoulder_ex, chest_ex, biceps_ex, triceps_ex]
+    random.shuffle(final)
+
+    reps = "15회"; sets = 4
+    show_notes(show_main_tip=False)
+    st.markdown(f"---\n📌 추천 루틴: 상체 ({sets}세트 / {reps})")
+
+    for i, (name, file) in enumerate(final, 1):
+        col1, col2 = st.columns([1, 5])
+        with col1:
+            st.image(file, width=150) if os.path.exists(file) else st.warning("이미지 없음")
+        with col2:
+            st.markdown(f"**{i}. {name}**  \n{sets}세트 / {reps}")
+
+elif part == "밀기":
+    # 가슴 2 + 어깨 2 + 삼두 1 (완전 변동)
+    chest = random.sample(routine_db["가슴"], 2)
+    shoulder = random.sample(routine_db["어깨"], 2)
+    triceps = random.choice(arms_db["삼두"])
+    final = chest + shoulder + [triceps]
+    random.shuffle(final)
+
+    reps = "15회"; sets = 4
+    show_notes(show_main_tip=False)
+    st.markdown(f"---\n📌 추천 루틴: 밀기 ({sets}세트 / {reps})")
+
+    for i, (name, file) in enumerate(final, 1):
+        col1, col2 = st.columns([1, 5])
+        with col1:
+            st.image(file, width=150) if os.path.exists(file) else st.warning("이미지 없음")
+        with col2:
+            st.markdown(f"**{i}. {name}**  \n{sets}세트 / {reps}")
+
+elif part == "당기기":
+    # 등 4 + 이두 1 (완전 변동)
+    pulls = routine_db["등"][:]
+    random.shuffle(pulls)
+    selected_pulls = pulls[:4]
+    biceps_choice = random.choice(arms_db["이두"])
+    final = selected_pulls + [biceps_choice]
+    random.shuffle(final)
+
+    reps = "15회"; sets = 4
+    show_notes(show_main_tip=False)
+    st.markdown(f"---\n📌 추천 루틴: 당기기 ({sets}세트 / {reps})")
+
+    for i, (name, file) in enumerate(final, 1):
+        col1, col2 = st.columns([1, 5])
+        with col1:
+            st.image(file, width=150) if os.path.exists(file) else st.warning("이미지 없음")
+        with col2:
+            st.markdown(f"**{i}. {name}**  \n{sets}세트 / {reps}")
+
 else:
-    experience = st.selectbox("운동 경력", ["1개월~1년 미만", "1년 이상"])
+    # 기본 로직 (경력 반영 + 메인운동 강조)
+    experience = st.selectbox("운동 경력", ["1개월~1년 미만", "1년 이상"], key="exp_select")
     if experience == "1개월~1년 미만":
-        num_exercises = 4
-        reps = "15회"
-        sets = 4
+        num_exercises = 4; reps = "15회"; sets = 4
     else:
-        num_exercises = 6
-        reps = "15~20회"
-        sets = random.choice([4, 5])
+        num_exercises = 6; reps = "15~20회"; sets = random.choice([4, 5])
 
     all_items = routine_db[part]
     main_name = main_exercise.get(part, "")
@@ -128,20 +207,21 @@ else:
     others = [e for e in all_items if e not in main_item]
     random.shuffle(others)
     final = main_item + others[:num_exercises - len(main_item)]
-    random.shuffle(final[:2])
 
-    st.markdown("📌 운동 루틴 생성 후 순서는 그대로 해도 되고 바꿔도 상관 없습니다.")
-    st.markdown("💥 <span style='color:red;'>💥 메인운동은 무게가 무거워질수록 반복 횟수를 줄입니다.</span>", unsafe_allow_html=True)
+    # 메인운동이 항상 1~2번째에 오도록 '앞 2개만' 섞되, 실제 리스트에 반영
+    first_two = final[:2]
+    random.shuffle(first_two)
+    final[:2] = first_two
+
+    show_notes(show_main_tip=True)
+    st.markdown(f"---\n📌 추천 루틴: {part} ({sets}세트 / {reps})")
 
     for i, (name, file) in enumerate(final, 1):
-        is_main = name == main_name
+        is_main = (name == main_name and main_name != "")
         rep_text = "8~10회" if is_main else reps
         prefix = "💥 " if is_main else ""
         col1, col2 = st.columns([1, 5])
         with col1:
-            if os.path.exists(file):
-                st.image(file, width=150)
-            else:
-                st.warning("이미지 없음")
+            st.image(file, width=150) if os.path.exists(file) else st.warning("이미지 없음")
         with col2:
             st.markdown(f"**{i}. {prefix}{name}**  \n{sets}세트 / {rep_text}")
